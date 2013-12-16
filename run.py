@@ -12,7 +12,7 @@ OUTPUT_PATH = 'output'
 
 def make(filename='', content_path='', output_path='', out_format='html'):
     def corresponding_output_path():
-        return "{}.{}".format(filename.replace(content_path, output_path, 1).split('.')[0], out_format)
+        return "{name}.{extension}".format(name=filename.replace(content_path, output_path, 1).split('.')[0], extension=out_format)
 
     with open(filename) as f:
         s = publish_string(f.read(), writer_name=out_format)
