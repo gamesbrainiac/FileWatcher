@@ -35,6 +35,7 @@ class Watcher:
         self.ext = ext
         self.produce = partial(func, content_path=self.dir, output_path=self.out, out_format='html')
         self.file_tuple = namedtuple('FileTuple', ['path', 'time'])
+        self.printlock = thread.allocate_lock()
 
         if clean:
             self._clean_out_dir()
@@ -105,9 +106,10 @@ class Watcher:
         @type interval: int
         @param interval: Interval of sleep
         """
-        print "#{:+^98}#".format(" Watcher Activated! ")
-        print "{:.^100}".format(" Watching {{{}}} recursively ".format(self.dir))
-        print "=" * 100
+        with self.printlock:
+            print "#{:+^98}#".format(" Watcher Activated! ")
+            print "{:.^100}".format(" Watching {{{}}} recursively ".format(self.dir))
+            print "=" * 100
 
         last_file_list = set()
         try:
@@ -122,7 +124,8 @@ class Watcher:
                     self._copy_non_converted_to_out_dir(changed)
                     last_file_list = update
         except KeyboardInterrupt:
-            print "!!{:+^20}!!".format("Ending Watch")
+            with self.printlock:
+                print "!!{:+^20}!!".format("Ending Watch")
             return
 
     def activate_and_serve(self, port=8000):
@@ -138,7 +141,7 @@ class Watcher:
             resource = File(self.out)
             factory = Site(resource)
             reactor.listenTCP(port, factory)
-            with thread.allocate_lock():
+            with self.printlock:
                 print ""
                 print "Serving now on http://{}:{}".format('0.0.0.0', port)
             reactor.run()
