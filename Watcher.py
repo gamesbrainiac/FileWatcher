@@ -5,13 +5,17 @@ import thread
 import datetime
 from functools import partial
 from collections import namedtuple, deque
+
 from twisted.web.server import Site
 from twisted.web.static import File
 from twisted.internet import reactor
 
+# Named Tuple classes
+FileTuple = namedtuple('FileTuple', ['path', 'time'])
+
 
 class Watcher:
-    def __init__(self, content='', output='', func=None, ext='.rst', clean=True):
+    def __init__(self, content='', output='output', func=None, ext='.rst', clean=True):
         """
         Watcher will watch the content directory, and output data to the
         output directory based on the func method. The func method will be expected
@@ -34,7 +38,6 @@ class Watcher:
         self.out = output
         self.ext = ext
         self.produce = partial(func, content_path=self.dir, output_path=self.out, out_format='html')
-        self.file_tuple = namedtuple('FileTuple', ['path', 'time'])
         self.printlock = thread.allocate_lock()
 
         if clean:
@@ -63,10 +66,11 @@ class Watcher:
     def _file_list(self):
         """
         Lists every single file in content directory
-        @return:
+        @return: list[FileTuple]
         """
+        # TODO: Make this function better, because we're using os.walk twice
         root, dirs, files = tuple(os.walk(self.dir))[0]
-        all_files = [self.file_tuple(os.path.join(root, f), os.stat(os.path.join(root, f)).st_mtime)
+        all_files = [FileTuple(os.path.join(root, f), os.stat(os.path.join(root, f)).st_mtime)
                      for f in files]
 
         q = deque([os.path.join(root, d) for d in dirs])
@@ -74,13 +78,14 @@ class Watcher:
         while q:
             d = q.pop()
             r, drs, fs = tuple(os.walk(d))[0]
-            all_files.extend([self.file_tuple(os.path.join(r, f), os.stat(os.path.join(r, f)).st_mtime)
+            all_files.extend([FileTuple(os.path.join(r, f), os.stat(os.path.join(r, f)).st_mtime)
                               for f in fs])
             q.extend([os.path.join(r, d) for d in drs])
 
         return all_files
 
     def _print_whats_being_updated(self, changed_files):
+        # TODO: Need to reconsider this function as often, its just a changed file and not a list of files
         for var in changed_files:
             print var.path, datetime.datetime.fromtimestamp(var.time)
 
@@ -95,9 +100,9 @@ class Watcher:
     def _copy_non_converted_to_out_dir(self, fs):
         """
         Just copy files that don't need conversion to output directory
-        @param fs:
+        @param fs: list of files that were not converted
         """
-        for var in [v for v in fs if os.path.splitext(v.path)[1] != self.ext]:
+        for var in [f for f in fs if os.path.splitext(f.path)[1] != self.ext]:
             shutil.copyfile(var.path, var.path.replace(self.dir, self.out, 1))
 
     def activate(self, interval=1):
@@ -143,7 +148,7 @@ class Watcher:
             reactor.listenTCP(port, factory)
             with self.printlock:
                 print ""
-                print "Serving now on http://{}:{}".format('0.0.0.0', port)
+                print "Serving now on http://{}:{}".format('localhost', port)
             reactor.run()
         except KeyboardInterrupt:
             print "Closing server"
