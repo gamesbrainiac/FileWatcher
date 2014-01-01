@@ -4,7 +4,7 @@ This is a test script for development just to see if things are
 indeed working
 """
 
-from Watcher import Watcher
+from watcher import task_runner
 from docutils.core import publish_string
 
 
@@ -25,5 +25,5 @@ def make(filename='', content_path='', output_path='', out_format='html'):
 
 
 if __name__ == '__main__':
-    rst_watcher = Watcher(CONTENT_PATH, OUTPUT_PATH, func=make)
+    rst_watcher = task_runner.TaskRunner(CONTENT_PATH, OUTPUT_PATH, func=make)
     rst_watcher.activate_and_serve()

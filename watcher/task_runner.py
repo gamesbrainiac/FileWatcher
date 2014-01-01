@@ -4,25 +4,24 @@ import shutil
 import thread
 import datetime
 from functools import partial
-from collections import namedtuple, deque
+from collections import deque
 
 from twisted.web.server import Site
 from twisted.web.static import File
 from twisted.internet import reactor
 
-# Named Tuple classes
-FileTuple = namedtuple('FileTuple', ['path', 'time'])
+from .utils import FileTuple
 
 
-class Watcher:
+class TaskRunner:
     def __init__(self, content='', output='output', func=None, ext='.rst', clean=True):
         """
-        Watcher will watch the content directory, and output data to the
+        watcher will watch the content directory, and output data to the
         output directory based on the func method. The func method will be expected
         to deal with relative file paths of files and deal with them as it deems fit.
 
         The content and the output directory are relative to directory of where the
-        Watcher class is being activated.
+        watcher class is being activated.
 
         @type func: callable
         @type output: str
@@ -85,7 +84,6 @@ class Watcher:
         return all_files
 
     def _print_whats_being_updated(self, changed_files):
-        # TODO: Need to reconsider this function as often, its just a changed file and not a list of files
         for var in changed_files:
             print var.path, datetime.datetime.fromtimestamp(var.time)
 
@@ -112,7 +110,7 @@ class Watcher:
         @param interval: Interval of sleep
         """
         with self.printlock:
-            print "#{:+^98}#".format(" Watcher Activated! ")
+            print "#{:+^98}#".format(" watcher Activated! ")
             print "{:.^100}".format(" Watching {{{}}} recursively ".format(self.dir))
             print "=" * 100
 
